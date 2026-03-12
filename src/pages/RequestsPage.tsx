@@ -46,6 +46,12 @@ export default function RequestsPage() {
       if (c) c.status = 'Reserved';
     });
     saveChutes(allChutes);
+    addNotification({
+      type: 'request_approved',
+      title: 'Request Approved',
+      message: `${req.transferNumber} approved (${req.chuteIds.length} pieces)`,
+      forRoles: ['store_manager', 'production_manager', 'unit1_manager', 'unit2_manager', 'engineer', 'worker'],
+    });
     toast.success(`Request ${req.transferNumber} approved`);
   };
 
