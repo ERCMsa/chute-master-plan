@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Check, X, Truck, FileDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { generateTransferPDF } from '@/lib/pdf';
+import { addNotification } from '@/lib/notifications';
 
 const STATUS_COLORS: Record<string, string> = {
   Pending: 'bg-warning text-warning-foreground',
