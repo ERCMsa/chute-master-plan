@@ -74,6 +74,12 @@ export default function InventoryPage() {
     const requests = getRequests();
     requests.push(req);
     saveRequests(requests);
+    addNotification({
+      type: 'request_created',
+      title: 'New Transfer Request',
+      message: `${req.transferNumber} by ${user.fullName} (${selectedChutes.length} pieces)`,
+      forRoles: ['store_manager', 'production_manager', 'unit1_manager', 'unit2_manager'],
+    });
     toast.success(`Transfer request ${req.transferNumber} created`);
     setSelected(new Set());
     navigate('/requests');
