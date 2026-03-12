@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { PlusCircle } from 'lucide-react';
 import type { SteelType } from '@/types';
+import ExcelImport from '@/components/ExcelImport';
+import { addNotification } from '@/lib/notifications';
 
 export default function AddChutePage() {
   const { user } = useAuth();
@@ -41,13 +43,22 @@ export default function AddChutePage() {
     };
     chutes.push(newChute);
     saveChutes(chutes);
+    addNotification({
+      type: 'chute_added',
+      title: 'New Chute Added',
+      message: `${steelType} ${sectionSize} - ${length}mm added by ${user?.fullName}`,
+      forRoles: ['store_manager', 'production_manager', 'unit1_manager', 'unit2_manager'],
+    });
     toast.success(`Chute ${id} added successfully`);
     navigate('/inventory');
   };
 
   return (
     <div className="animate-fade-in max-w-2xl">
-      <h2 className="text-2xl font-bold text-foreground mb-6">Add New Chute</h2>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <h2 className="text-2xl font-bold text-foreground">Add New Chute</h2>
+        <ExcelImport />
+      </div>
       <form onSubmit={handleSubmit} className="bg-card rounded-lg border p-6 space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div>

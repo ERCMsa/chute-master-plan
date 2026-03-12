@@ -8,6 +8,7 @@ import {
   LogOut, Menu, X, Search
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import NotificationBell from '@/components/NotificationBell';
 
 const NAV_ITEMS = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard, permission: 'dashboard' },
@@ -38,6 +39,7 @@ export default function AppLayout() {
           <p className="text-industrial-steel text-xs">Steel Scrap Management</p>
         </div>
         <div className="ml-auto flex items-center gap-3">
+          <NotificationBell />
           <div className="text-right hidden sm:block">
             <p className="text-secondary-foreground text-sm font-medium">{user?.fullName}</p>
             <p className="text-industrial-steel text-xs">{user ? ROLE_LABELS[user.role] : ''}</p>

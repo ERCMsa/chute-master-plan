@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { getChutes, saveChutes, getNextTransferNumber, getRequests, saveRequests } from '@/lib/store';
+import { addNotification } from '@/lib/notifications';
 import { useAuth } from '@/contexts/AuthContext';
 import { Chute, STEEL_TYPES, ZONES, TransferRequest } from '@/types';
 import { Input } from '@/components/ui/input';
@@ -73,6 +74,12 @@ export default function InventoryPage() {
     const requests = getRequests();
     requests.push(req);
     saveRequests(requests);
+    addNotification({
+      type: 'request_created',
+      title: 'New Transfer Request',
+      message: `${req.transferNumber} by ${user.fullName} (${selectedChutes.length} pieces)`,
+      forRoles: ['store_manager', 'production_manager', 'unit1_manager', 'unit2_manager'],
+    });
     toast.success(`Transfer request ${req.transferNumber} created`);
     setSelected(new Set());
     navigate('/requests');

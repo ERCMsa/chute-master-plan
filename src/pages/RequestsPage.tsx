@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Check, X, Truck, FileDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { generateTransferPDF } from '@/lib/pdf';
+import { addNotification } from '@/lib/notifications';
 
 const STATUS_COLORS: Record<string, string> = {
   Pending: 'bg-warning text-warning-foreground',
@@ -45,6 +46,12 @@ export default function RequestsPage() {
       if (c) c.status = 'Reserved';
     });
     saveChutes(allChutes);
+    addNotification({
+      type: 'request_approved',
+      title: 'Request Approved',
+      message: `${req.transferNumber} approved (${req.chuteIds.length} pieces)`,
+      forRoles: ['store_manager', 'production_manager', 'unit1_manager', 'unit2_manager', 'engineer', 'worker'],
+    });
     toast.success(`Request ${req.transferNumber} approved`);
   };
 
@@ -56,6 +63,12 @@ export default function RequestsPage() {
       if (c) c.status = 'Used';
     });
     saveChutes(allChutes);
+    addNotification({
+      type: 'request_delivered',
+      title: 'Request Delivered',
+      message: `${req.transferNumber} delivered to ${req.unit === 'unit1' ? 'Unit 1' : 'Unit 2'}`,
+      forRoles: ['store_manager', 'production_manager', 'unit1_manager', 'unit2_manager', 'engineer', 'worker'],
+    });
     toast.success(`Request ${req.transferNumber} delivered`);
   };
 
