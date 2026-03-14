@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { getChutes, saveChutes } from '@/lib/store';
-import { Chute, STEEL_TYPES, SECTION_SIZES, ZONES } from '@/types';
+import { getChutes, saveChutes, addCustomSize, getCustomSizes } from '@/lib/store';
+import { Chute, STEEL_TYPES, SECTION_SIZES } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Plus } from 'lucide-react';
 import type { SteelType } from '@/types';
 import ExcelImport from '@/components/ExcelImport';
 import { addNotification } from '@/lib/notifications';
@@ -18,10 +18,26 @@ export default function AddChutePage() {
   const navigate = useNavigate();
   const [steelType, setSteelType] = useState<SteelType>('IPE');
   const [sectionSize, setSectionSize] = useState('');
+  const [customSize, setCustomSize] = useState('');
+  const [showCustomSize, setShowCustomSize] = useState(false);
   const [length, setLength] = useState('');
-  const [zone, setZone] = useState('A');
   const [rack, setRack] = useState('1');
   const [level, setLevel] = useState('1');
+
+  const customSizes = getCustomSizes();
+  const allSizes = [
+    ...SECTION_SIZES[steelType],
+    ...(customSizes[steelType] || []),
+  ].filter((v, i, a) => a.indexOf(v) === i);
+
+  const handleAddCustomSize = () => {
+    if (!customSize.trim()) return;
+    addCustomSize(steelType, customSize.trim());
+    setSectionSize(customSize.trim());
+    setCustomSize('');
+    setShowCustomSize(false);
+    toast.success(`Size ${customSize.trim()} added to ${steelType}`);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,10 +49,9 @@ export default function AddChutePage() {
       steelType,
       sectionSize,
       length: parseInt(length),
-      zone,
       rack: parseInt(rack),
       level: parseInt(level),
-      locationCode: `${zone}-${rack}-${level}`,
+      locationCode: `R${rack}-L${level}`,
       dateAdded: new Date().toISOString().split('T')[0],
       addedBy: user?.fullName || '',
       status: 'Available',
@@ -72,25 +87,38 @@ export default function AddChutePage() {
           </div>
           <div>
             <Label>Section Size</Label>
-            <Select value={sectionSize} onValueChange={setSectionSize}>
-              <SelectTrigger className="h-12"><SelectValue placeholder="Select size" /></SelectTrigger>
-              <SelectContent>
-                {SECTION_SIZES[steelType].map(s => <SelectItem key={s} value={s}>{steelType} {s}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            {showCustomSize ? (
+              <div className="flex gap-2">
+                <Input
+                  value={customSize}
+                  onChange={e => setCustomSize(e.target.value)}
+                  placeholder="e.g. 350 or 110x110"
+                  className="h-12 flex-1"
+                />
+                <Button type="button" onClick={handleAddCustomSize} size="icon" className="h-12 w-12 shrink-0">
+                  <Plus className="h-4 w-4" />
+                </Button>
+                <Button type="button" variant="ghost" onClick={() => setShowCustomSize(false)} className="h-12">
+                  Cancel
+                </Button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Select value={sectionSize} onValueChange={setSectionSize}>
+                  <SelectTrigger className="h-12 flex-1"><SelectValue placeholder="Select size" /></SelectTrigger>
+                  <SelectContent>
+                    {allSizes.map(s => <SelectItem key={s} value={s}>{steelType} {s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Button type="button" variant="outline" size="icon" onClick={() => setShowCustomSize(true)} className="h-12 w-12 shrink-0" title="Add custom size">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </div>
           <div>
             <Label>Length (mm)</Label>
             <Input type="number" min={1} max={12000} value={length} onChange={e => setLength(e.target.value)} placeholder="e.g. 850" className="h-12" />
-          </div>
-          <div>
-            <Label>Zone</Label>
-            <Select value={zone} onValueChange={setZone}>
-              <SelectTrigger className="h-12"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {ZONES.map(z => <SelectItem key={z} value={z}>Zone {z}</SelectItem>)}
-              </SelectContent>
-            </Select>
           </div>
           <div>
             <Label>Rack Number</Label>
@@ -103,7 +131,7 @@ export default function AddChutePage() {
         </div>
 
         <div className="bg-muted rounded-lg p-4">
-          <p className="text-sm text-muted-foreground">Location Code: <span className="font-bold text-foreground">{zone}-{rack}-{level}</span></p>
+          <p className="text-sm text-muted-foreground">Storage: <span className="font-bold text-foreground">Unit 2 — Rack {rack}, Level {level}</span></p>
         </div>
 
         <Button type="submit" className="btn-industrial red-gradient gap-2 w-full sm:w-auto">

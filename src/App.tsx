@@ -10,7 +10,8 @@ import InventoryPage from "@/pages/InventoryPage";
 import AddChutePage from "@/pages/AddChutePage";
 import RequestsPage from "@/pages/RequestsPage";
 import StatisticsPage from "@/pages/StatisticsPage";
-import UsersPage from "@/pages/UsersPage";
+import SettingsPage from "@/pages/SettingsPage";
+import ArchivePage from "@/pages/ArchivePage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,8 +29,9 @@ function ProtectedRoutes() {
         {hasPermission('inventory') && <Route path="/inventory" element={<InventoryPage />} />}
         {hasPermission('add_chute') && <Route path="/add-chute" element={<AddChutePage />} />}
         {hasPermission('requests') && <Route path="/requests" element={<RequestsPage />} />}
+        {hasPermission('inventory') && <Route path="/archive" element={<ArchivePage />} />}
         {hasPermission('statistics') && <Route path="/statistics" element={<StatisticsPage />} />}
-        {hasPermission('users') && <Route path="/users" element={<UsersPage />} />}
+        <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to={defaultPath} replace />} />
       </Route>
     </Routes>

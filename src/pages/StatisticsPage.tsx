@@ -14,7 +14,6 @@ export default function StatisticsPage() {
       return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
     });
 
-    // Profile counts
     const profileCount: Record<string, number> = {};
     used.forEach(c => {
       const key = `${c.steelType} ${c.sectionSize}`;
@@ -22,7 +21,6 @@ export default function StatisticsPage() {
     });
     const topProfiles = Object.entries(profileCount).sort((a, b) => b[1] - a[1]).slice(0, 10);
 
-    // Type counts
     const typeCount: Record<string, number> = {};
     used.forEach(c => { typeCount[c.steelType] = (typeCount[c.steelType] || 0) + 1; });
     const topTypes = Object.entries(typeCount).sort((a, b) => b[1] - a[1]);
@@ -30,7 +28,6 @@ export default function StatisticsPage() {
     return {
       totalReused: used.length,
       thisMonthReused: thisMonth.length,
-      savings: used.length * 50,
       topProfiles,
       topTypes,
       deliveredRequests: requests.filter(r => r.status === 'Delivered').length,
@@ -54,8 +51,8 @@ export default function StatisticsPage() {
         </div>
         <div className="stat-card">
           <BarChart3 className="h-6 w-6 text-info mb-2" />
-          <p className="text-3xl font-bold text-success">€{stats.savings.toLocaleString()}</p>
-          <p className="text-sm text-muted-foreground">Estimated Savings</p>
+          <p className="text-3xl font-bold text-foreground">{stats.deliveredRequests}</p>
+          <p className="text-sm text-muted-foreground">Delivered Requests</p>
         </div>
       </div>
 

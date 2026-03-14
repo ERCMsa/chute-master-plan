@@ -4,8 +4,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import ercmLogo from '@/assets/ercm-logo.png';
 import { ROLE_LABELS } from '@/types';
 import {
-  LayoutDashboard, Package, PlusCircle, FileText, Users, BarChart3,
-  LogOut, Menu, X, Search
+  LayoutDashboard, Package, PlusCircle, FileText, BarChart3,
+  LogOut, Menu, X, Settings, Archive
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import NotificationBell from '@/components/NotificationBell';
@@ -15,8 +15,9 @@ const NAV_ITEMS = [
   { path: '/inventory', label: 'Inventory', icon: Package, permission: 'inventory' },
   { path: '/add-chute', label: 'Add Chute', icon: PlusCircle, permission: 'add_chute' },
   { path: '/requests', label: 'Requests', icon: FileText, permission: 'requests' },
+  { path: '/archive', label: 'Archive', icon: Archive, permission: 'inventory' },
   { path: '/statistics', label: 'Statistics', icon: BarChart3, permission: 'statistics' },
-  { path: '/users', label: 'Users', icon: Users, permission: 'users' },
+  { path: '/settings', label: 'Settings', icon: Settings, permission: 'inventory' },
 ];
 
 export default function AppLayout() {
@@ -28,7 +29,6 @@ export default function AppLayout() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Top Header */}
       <header className="industrial-gradient h-16 flex items-center px-4 gap-4 no-print shrink-0 z-50">
         <button onClick={() => setSidebarOpen(!sidebarOpen)} className="lg:hidden text-secondary-foreground">
           {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -51,7 +51,6 @@ export default function AppLayout() {
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
         <aside className={`
           fixed lg:static inset-y-16 left-0 z-40 w-64 industrial-gradient border-r border-sidebar-border
           transform transition-transform lg:transform-none
@@ -80,12 +79,10 @@ export default function AppLayout() {
           </nav>
         </aside>
 
-        {/* Overlay */}
         {sidebarOpen && (
           <div className="fixed inset-0 bg-foreground/50 z-30 lg:hidden" onClick={() => setSidebarOpen(false)} />
         )}
 
-        {/* Main Content */}
         <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
           <Outlet />
         </main>

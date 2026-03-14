@@ -1,8 +1,8 @@
-import { useState, useMemo, useCallback } from 'react';
-import { getChutes, saveChutes, getNextTransferNumber, getRequests, saveRequests } from '@/lib/store';
+import { useState, useMemo } from 'react';
+import { getChutes, getNextTransferNumber, getRequests, saveRequests } from '@/lib/store';
 import { addNotification } from '@/lib/notifications';
 import { useAuth } from '@/contexts/AuthContext';
-import { Chute, STEEL_TYPES, ZONES, TransferRequest } from '@/types';
+import { Chute, STEEL_TYPES, TransferRequest } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -15,23 +15,22 @@ import { useNavigate } from 'react-router-dom';
 const STATUS_COLORS: Record<string, string> = {
   Available: 'bg-success text-success-foreground',
   Reserved: 'bg-warning text-warning-foreground',
-  Used: 'bg-muted text-muted-foreground',
 };
 
 export default function InventoryPage() {
   const { user, hasPermission } = useAuth();
   const navigate = useNavigate();
-  const [chutes, setChutes] = useState(getChutes);
+  const [chutes] = useState(getChutes);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('all');
-  const [filterZone, setFilterZone] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
+  // Only show Available and Reserved chutes (Used = delivered = goes to archive)
   const filtered = useMemo(() => {
     return chutes.filter(c => {
+      if (c.status === 'Used') return false; // Hide used/delivered from inventory
       if (filterType !== 'all' && c.steelType !== filterType) return false;
-      if (filterZone !== 'all' && c.zone !== filterZone) return false;
       if (filterStatus !== 'all' && c.status !== filterStatus) return false;
       if (search) {
         const s = search.toLowerCase();
@@ -43,7 +42,7 @@ export default function InventoryPage() {
       }
       return true;
     });
-  }, [chutes, search, filterType, filterZone, filterStatus]);
+  }, [chutes, search, filterType, filterStatus]);
 
   const toggleSelect = (id: string) => {
     setSelected(prev => {
@@ -92,12 +91,14 @@ export default function InventoryPage() {
     <div className="animate-fade-in space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-2xl font-bold text-foreground">Chute Inventory</h2>
-        {canRequest && selected.size > 0 && (
-          <Button onClick={handleCreateRequest} className="btn-industrial red-gradient gap-2">
-            <ShoppingCart className="h-5 w-5" />
-            Create Request ({selectedAvailable.length})
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {canRequest && selected.size > 0 && (
+            <Button onClick={handleCreateRequest} className="btn-industrial red-gradient gap-2">
+              <ShoppingCart className="h-5 w-5" />
+              Request Selected ({selectedAvailable.length})
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Filters */}
@@ -113,25 +114,17 @@ export default function InventoryPage() {
             {STEEL_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Select value={filterZone} onValueChange={setFilterZone}>
-          <SelectTrigger className="w-[130px] h-11"><SelectValue placeholder="Zone" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Zones</SelectItem>
-            {ZONES.map(z => <SelectItem key={z} value={z}>Zone {z}</SelectItem>)}
-          </SelectContent>
-        </Select>
         <Select value={filterStatus} onValueChange={setFilterStatus}>
           <SelectTrigger className="w-[140px] h-11"><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="Available">Available</SelectItem>
             <SelectItem value="Reserved">Reserved</SelectItem>
-            <SelectItem value="Used">Used</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      <p className="text-sm text-muted-foreground">{filtered.length} pieces found</p>
+      <p className="text-sm text-muted-foreground">{filtered.length} pieces in stock</p>
 
       {/* Table */}
       <div className="overflow-x-auto rounded-lg border bg-card">

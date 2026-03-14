@@ -21,19 +21,16 @@ interface ExcelRow {
   section?: string;
   length?: number;
   Length?: number;
-  zone?: string;
-  Zone?: string;
   rack?: number;
   Rack?: number;
   level?: number;
   Level?: number;
 }
 
-function normalizeRow(row: any): { steelType: string; sectionSize: string; length: number; zone: string; rack: number; level: number } | null {
+function normalizeRow(row: any): { steelType: string; sectionSize: string; length: number; rack: number; level: number } | null {
   const steelType = row.steelType || row.SteelType || row.steel_type || row.Type || row.type || row['Steel Type'] || '';
   const sectionSize = String(row.sectionSize || row.SectionSize || row.section_size || row.Section || row.section || row['Section Size'] || '');
   const length = Number(row.length || row.Length || row['Length (mm)'] || 0);
-  const zone = String(row.zone || row.Zone || 'A');
   const rack = Number(row.rack || row.Rack || 1);
   const level = Number(row.level || row.Level || 1);
 
@@ -42,7 +39,7 @@ function normalizeRow(row: any): { steelType: string; sectionSize: string; lengt
   const normalizedType = STEEL_TYPES.find(t => t.toLowerCase() === steelType.toString().toLowerCase());
   if (!normalizedType) return null;
 
-  return { steelType: normalizedType, sectionSize, length, zone: zone.toUpperCase(), rack, level };
+  return { steelType: normalizedType, sectionSize, length, rack, level };
 }
 
 export default function ExcelImport() {
@@ -79,10 +76,9 @@ export default function ExcelImport() {
           steelType: normalized.steelType as SteelType,
           sectionSize: normalized.sectionSize,
           length: normalized.length,
-          zone: normalized.zone,
           rack: normalized.rack,
           level: normalized.level,
-          locationCode: `${normalized.zone}-${normalized.rack}-${normalized.level}`,
+          locationCode: `R${normalized.rack}-L${normalized.level}`,
           dateAdded: new Date().toISOString().split('T')[0],
           addedBy: user?.fullName || '',
           status: 'Available',
