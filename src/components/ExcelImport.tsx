@@ -21,8 +21,6 @@ interface ExcelRow {
   section?: string;
   length?: number;
   Length?: number;
-  zone?: string;
-  Zone?: string;
   rack?: number;
   Rack?: number;
   level?: number;
