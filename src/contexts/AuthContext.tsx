@@ -12,8 +12,8 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 const PERMISSIONS: Record<UserRole, string[]> = {
-  store_manager: ['dashboard', 'inventory', 'add_chute', 'requests', 'approve_request', 'deliver_request', 'users', 'statistics', 'transfer_doc', 'search'],
-  production_manager: ['dashboard', 'inventory', 'requests', 'approve_request', 'statistics', 'search'],
+  store_manager: ['dashboard', 'inventory', 'add_chute', 'requests', 'approve_request', 'deliver_request', 'create_request', 'users', 'statistics', 'transfer_doc', 'search'],
+  production_manager: ['dashboard', 'inventory', 'requests', 'approve_request', 'create_request', 'statistics', 'search'],
   unit1_manager: ['dashboard', 'inventory', 'requests', 'create_request', 'search'],
   unit2_manager: ['dashboard', 'inventory', 'requests', 'create_request', 'search'],
   engineer: ['inventory', 'create_request', 'search', 'requests'],
