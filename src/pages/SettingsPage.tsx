@@ -46,7 +46,7 @@ export default function SettingsPage() {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ role: editRole, display_name: editName })
+        .update({ role: editRole as any, display_name: editName })
         .eq('id', editingId);
       if (error) throw error;
       toast.success('Profile updated');

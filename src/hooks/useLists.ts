@@ -111,10 +111,13 @@ export function useSupplyLists() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('supply_lists')
-        .select('*, profiles:created_by(display_name)')
+        .select('*')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data as SupplyList[];
+      const userIds = [...new Set((data || []).map(d => d.created_by))];
+      const { data: profiles } = await supabase.from('profiles').select('id, display_name').in('id', userIds);
+      const profileMap = Object.fromEntries((profiles || []).map(p => [p.id, p.display_name]));
+      return (data || []).map(d => ({ ...d, profiles: { display_name: profileMap[d.created_by] || '' } })) as SupplyList[];
     },
   });
 }
