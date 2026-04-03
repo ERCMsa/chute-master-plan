@@ -1,23 +1,43 @@
 import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
 import ercmLogo from '@/assets/ercm-logo.png';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Lock, User } from 'lucide-react';
+import { Lock, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function LoginPage() {
-  const { login } = useAuth();
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [displayName, setDisplayName] = useState('');
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!login(username, password)) {
-      setError('Invalid username or password');
+    setLoading(true);
+    try {
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { full_name: displayName },
+            emailRedirectTo: window.location.origin,
+          },
+        });
+        if (error) throw error;
+        toast.success('Check your email to confirm your account');
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Authentication failed');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -27,9 +47,8 @@ export default function LoginPage() {
       const result = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: window.location.origin,
       });
-      if (result.error) {
-        toast.error('Google sign-in failed');
-      }
+      if (result.error) toast.error('Google sign-in failed');
+      if (result.redirected) return;
     } catch {
       toast.error('Google sign-in failed');
     } finally {
@@ -43,8 +62,10 @@ export default function LoginPage() {
         <div className="flex justify-center mb-6">
           <img src={ercmLogo} alt="ERCM SA" className="h-20 object-contain" />
         </div>
-        <h1 className="text-2xl font-bold text-center text-foreground mb-1">Steel Scrap Management</h1>
-        <p className="text-center text-muted-foreground mb-8">Sign in to continue</p>
+        <h1 className="text-2xl font-bold text-center text-foreground mb-1">Chute Stock Management</h1>
+        <p className="text-center text-muted-foreground mb-8">
+          {isSignUp ? 'Create your account' : 'Sign in to continue'}
+        </p>
 
         <Button
           type="button"
@@ -64,16 +85,27 @@ export default function LoginPage() {
 
         <div className="relative mb-6">
           <div className="absolute inset-0 flex items-center"><div className="w-full border-t" /></div>
-          <div className="relative flex justify-center text-xs uppercase"><span className="bg-card px-2 text-muted-foreground">or continue with credentials</span></div>
+          <div className="relative flex justify-center text-xs uppercase"><span className="bg-card px-2 text-muted-foreground">or continue with email</span></div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {isSignUp && (
+            <div className="relative">
+              <Input
+                placeholder="Full Name"
+                value={displayName}
+                onChange={e => setDisplayName(e.target.value)}
+                className="h-12 text-base"
+              />
+            </div>
+          )}
           <div className="relative">
-            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
-              placeholder="Username"
-              value={username}
-              onChange={e => { setUsername(e.target.value); setError(''); }}
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
               className="pl-11 h-12 text-base"
             />
           </div>
@@ -83,22 +115,21 @@ export default function LoginPage() {
               type="password"
               placeholder="Password"
               value={password}
-              onChange={e => { setPassword(e.target.value); setError(''); }}
+              onChange={e => setPassword(e.target.value)}
               className="pl-11 h-12 text-base"
             />
           </div>
-          {error && <p className="text-destructive text-sm font-medium">{error}</p>}
-          <Button type="submit" className="w-full btn-industrial red-gradient">
-            Sign In
+          <Button type="submit" disabled={loading} className="w-full btn-industrial red-gradient">
+            {loading ? 'Please wait...' : isSignUp ? 'Create Account' : 'Sign In'}
           </Button>
         </form>
 
-        <div className="mt-6 p-4 rounded-lg bg-muted text-xs text-muted-foreground space-y-1">
-          <p className="font-semibold text-foreground">Demo Accounts:</p>
-          <p>admin / admin123 — Store Manager</p>
-          <p>engineer1 / eng123 — Engineer</p>
-          <p>unit1mgr / unit1 — Unit 1 Manager</p>
-        </div>
+        <p className="text-center text-sm text-muted-foreground mt-4">
+          {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
+          <button onClick={() => setIsSignUp(!isSignUp)} className="text-primary font-medium hover:underline">
+            {isSignUp ? 'Sign In' : 'Sign Up'}
+          </button>
+        </p>
       </div>
     </div>
   );

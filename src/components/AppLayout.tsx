@@ -2,30 +2,43 @@ import { useState } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import ercmLogo from '@/assets/ercm-logo.png';
-import { ROLE_LABELS } from '@/types';
 import {
-  LayoutDashboard, Package, PlusCircle, FileText, BarChart3,
-  LogOut, Menu, X, Settings, Archive
+  LayoutDashboard, Package, FileText, Truck, CheckSquare,
+  LogOut, Menu, X, Settings, ScrollText
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import NotificationBell from '@/components/NotificationBell';
+import { Badge } from '@/components/ui/badge';
 
-const NAV_ITEMS = [
-  { path: '/', label: 'Dashboard', icon: LayoutDashboard, permission: 'dashboard' },
-  { path: '/inventory', label: 'Inventory', icon: Package, permission: 'inventory' },
-  { path: '/add-chute', label: 'Add Chute', icon: PlusCircle, permission: 'add_chute' },
-  { path: '/requests', label: 'Requests', icon: FileText, permission: 'requests' },
-  { path: '/archive', label: 'Archive', icon: Archive, permission: 'inventory' },
-  { path: '/statistics', label: 'Statistics', icon: BarChart3, permission: 'statistics' },
-  { path: '/settings', label: 'Settings', icon: Settings, permission: 'inventory' },
+const ROLE_LABELS: Record<string, string> = {
+  engineer: 'Engineer',
+  magazinier: 'Magazinier',
+  stock_manager: 'Stock Manager',
+};
+
+interface NavItem {
+  path: string;
+  label: string;
+  icon: any;
+  roles: string[];
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { path: '/', label: 'Dashboard', icon: LayoutDashboard, roles: ['engineer', 'magazinier', 'stock_manager'] },
+  { path: '/stock', label: 'Stock', icon: Package, roles: ['engineer', 'magazinier', 'stock_manager'] },
+  { path: '/demands', label: 'Demand Lists', icon: FileText, roles: ['engineer', 'stock_manager'] },
+  { path: '/supplies', label: 'Supply Lists', icon: Truck, roles: ['magazinier', 'stock_manager'] },
+  { path: '/validation', label: 'Validation', icon: CheckSquare, roles: ['stock_manager'] },
+  { path: '/audit', label: 'Audit Log', icon: ScrollText, roles: ['stock_manager'] },
+  { path: '/settings', label: 'Settings', icon: Settings, roles: ['engineer', 'magazinier', 'stock_manager'] },
 ];
 
 export default function AppLayout() {
-  const { user, logout, hasPermission } = useAuth();
+  const { profile, signOut } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const filteredNav = NAV_ITEMS.filter(item => hasPermission(item.permission));
+  const role = profile?.role || 'engineer';
+  const filteredNav = NAV_ITEMS.filter(item => item.roles.includes(role));
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -36,15 +49,14 @@ export default function AppLayout() {
         <img src={ercmLogo} alt="ERCM SA" className="h-10 object-contain" />
         <div className="hidden sm:block ml-2">
           <h1 className="text-secondary-foreground font-bold text-lg leading-tight">ERCM SA</h1>
-          <p className="text-industrial-steel text-xs">Steel Scrap Management</p>
+          <p className="text-industrial-steel text-xs">Chute Stock Management</p>
         </div>
         <div className="ml-auto flex items-center gap-3">
-          <NotificationBell />
           <div className="text-right hidden sm:block">
-            <p className="text-secondary-foreground text-sm font-medium">{user?.fullName}</p>
-            <p className="text-industrial-steel text-xs">{user ? ROLE_LABELS[user.role] : ''}</p>
+            <p className="text-secondary-foreground text-sm font-medium">{profile?.display_name}</p>
+            <p className="text-industrial-steel text-xs">{ROLE_LABELS[role]}</p>
           </div>
-          <Button variant="ghost" size="icon" onClick={logout} className="text-industrial-steel hover:text-secondary-foreground hover:bg-sidebar-accent">
+          <Button variant="ghost" size="icon" onClick={signOut} className="text-industrial-steel hover:text-secondary-foreground hover:bg-sidebar-accent">
             <LogOut className="h-5 w-5" />
           </Button>
         </div>

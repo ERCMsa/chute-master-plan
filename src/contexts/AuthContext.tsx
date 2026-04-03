@@ -1,54 +1,70 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
-import { User, UserRole } from '@/types';
-import { getUsers } from '@/lib/store';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Session, User as SupabaseUser } from '@supabase/supabase-js';
+
+type AppRole = 'engineer' | 'magazinier' | 'stock_manager';
+
+interface Profile {
+  id: string;
+  display_name: string;
+  role: AppRole;
+}
 
 interface AuthContextType {
-  user: User | null;
-  login: (username: string, password: string) => boolean;
-  logout: () => void;
-  hasPermission: (permission: string) => boolean;
+  session: Session | null;
+  user: SupabaseUser | null;
+  profile: Profile | null;
+  loading: boolean;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const PERMISSIONS: Record<UserRole, string[]> = {
-  store_manager: ['dashboard', 'inventory', 'add_chute', 'requests', 'approve_request', 'deliver_request', 'create_request', 'users', 'statistics', 'transfer_doc', 'search'],
-  production_manager: ['dashboard', 'inventory', 'requests', 'approve_request', 'create_request', 'statistics', 'search'],
-  unit1_manager: ['dashboard', 'inventory', 'requests', 'create_request', 'search'],
-  unit2_manager: ['dashboard', 'inventory', 'requests', 'create_request', 'search'],
-  engineer: ['inventory', 'create_request', 'search', 'requests'],
-  worker: ['inventory', 'create_request', 'search', 'requests'],
-};
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(() => {
-    const stored = sessionStorage.getItem('ercm_current_user');
-    return stored ? JSON.parse(stored) : null;
-  });
+  const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const login = useCallback((username: string, password: string) => {
-    const users = getUsers();
-    const found = users.find(u => u.username === username && u.password === password && u.active);
-    if (found) {
-      setUser(found);
-      sessionStorage.setItem('ercm_current_user', JSON.stringify(found));
-      return true;
-    }
-    return false;
+  const fetchProfile = useCallback(async (userId: string) => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, display_name, role')
+      .eq('id', userId)
+      .single();
+    if (data) setProfile(data as Profile);
   }, []);
 
-  const logout = useCallback(() => {
-    setUser(null);
-    sessionStorage.removeItem('ercm_current_user');
-  }, []);
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        setSession(session);
+        if (session?.user) {
+          await fetchProfile(session.user.id);
+        } else {
+          setProfile(null);
+        }
+        setLoading(false);
+      }
+    );
 
-  const hasPermission = useCallback((permission: string) => {
-    if (!user) return false;
-    return PERMISSIONS[user.role]?.includes(permission) ?? false;
-  }, [user]);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      }
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [fetchProfile]);
+
+  const signOut = useCallback(async () => {
+    await supabase.auth.signOut();
+    setProfile(null);
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, hasPermission }}>
+    <AuthContext.Provider value={{ session, user: session?.user ?? null, profile, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   );
