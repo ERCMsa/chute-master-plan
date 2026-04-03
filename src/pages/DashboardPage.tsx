@@ -1,51 +1,43 @@
-import { useMemo } from 'react';
-import { getChutes, getRequests } from '@/lib/store';
+import { useStock } from '@/hooks/useStock';
+import { useDemandLists } from '@/hooks/useLists';
+import { useSupplyLists } from '@/hooks/useLists';
 import { useAuth } from '@/contexts/AuthContext';
-import { Package, CheckCircle, Clock, FileText, TrendingUp, Layers } from 'lucide-react';
+import { Package, Clock, CheckCircle, AlertTriangle, FileText, TrendingUp } from 'lucide-react';
 
 export default function DashboardPage() {
-  const { user } = useAuth();
-  const chutes = getChutes();
-  const requests = getRequests();
+  const { profile } = useAuth();
+  const { data: stock = [] } = useStock();
+  const { data: demands = [] } = useDemandLists();
+  const { data: supplies = [] } = useSupplyLists();
 
-  const stats = useMemo(() => {
-    const available = chutes.filter(c => c.status === 'Available').length;
-    const reserved = chutes.filter(c => c.status === 'Reserved').length;
-    const used = chutes.filter(c => c.status === 'Used').length;
-    const pending = requests.filter(r => r.status === 'Pending').length;
-    const inStock = available + reserved;
-
-    const steelCount: Record<string, number> = {};
-    chutes.filter(c => c.status === 'Used').forEach(c => {
-      steelCount[c.steelType] = (steelCount[c.steelType] || 0) + 1;
-    });
-    const topSteel = Object.entries(steelCount).sort((a, b) => b[1] - a[1]);
-
-    return { total: chutes.length, available, reserved, used, pending, inStock, topSteel };
-  }, [chutes, requests]);
+  const totalItems = stock.reduce((s, i) => s + i.quantity, 0);
+  const uniqueItems = stock.length;
+  const lowStock = stock.filter(i => i.quantity <= i.min_quantity && i.quantity > 0).length;
+  const outOfStock = stock.filter(i => i.quantity === 0).length;
+  const pendingDemands = demands.filter(d => d.status === 'pending').length;
+  const pendingSupplies = supplies.filter(s => s.status === 'pending').length;
 
   const cards = [
-    { label: 'In Stock', value: stats.inStock, icon: Package, color: 'bg-secondary' },
-    { label: 'Available', value: stats.available, icon: CheckCircle, color: 'bg-success' },
-    { label: 'Reserved', value: stats.reserved, icon: Clock, color: 'bg-warning' },
-    { label: 'Delivered', value: stats.used, icon: TrendingUp, color: 'bg-muted-foreground' },
-    { label: 'Pending Requests', value: stats.pending, icon: FileText, color: 'bg-primary' },
+    { label: 'Total Quantity', value: totalItems, icon: Package, color: 'bg-secondary' },
+    { label: 'Unique Items', value: uniqueItems, icon: TrendingUp, color: 'bg-primary' },
+    { label: 'Low Stock', value: lowStock, icon: AlertTriangle, color: 'bg-warning' },
+    { label: 'Out of Stock', value: outOfStock, icon: AlertTriangle, color: 'bg-destructive' },
+    { label: 'Pending Demands', value: pendingDemands, icon: FileText, color: 'bg-info' },
+    { label: 'Pending Supplies', value: pendingSupplies, icon: Clock, color: 'bg-success' },
   ];
 
   return (
     <div className="animate-fade-in space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-foreground">Dashboard</h2>
-        <p className="text-muted-foreground">Welcome back, {user?.fullName}</p>
+        <p className="text-muted-foreground">Welcome, {profile?.display_name || 'User'}</p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {cards.map(card => (
           <div key={card.label} className="stat-card flex flex-col">
-            <div className="flex items-center gap-2 mb-3">
-              <div className={`${card.color} text-secondary-foreground p-2 rounded-lg`}>
-                <card.icon className="h-5 w-5" />
-              </div>
+            <div className={`${card.color} text-secondary-foreground p-2 rounded-lg w-fit mb-3`}>
+              <card.icon className="h-5 w-5" />
             </div>
             <p className="text-3xl font-bold text-foreground">{card.value}</p>
             <p className="text-sm text-muted-foreground mt-1">{card.label}</p>
@@ -53,39 +45,40 @@ export default function DashboardPage() {
         ))}
       </div>
 
+      {/* Recent activity */}
       <div className="grid md:grid-cols-2 gap-4">
-        <div className="stat-card">
-          <div className="flex items-center gap-2 mb-3">
-            <TrendingUp className="h-5 w-5 text-primary" />
-            <h3 className="font-semibold text-foreground">Most Reused Steel</h3>
-          </div>
-          {stats.topSteel.length > 0 ? (
-            <ul className="space-y-2">
-              {stats.topSteel.map(([type, count]) => (
-                <li key={type} className="flex justify-between text-sm">
-                  <span className="text-foreground font-medium">{type}</span>
-                  <span className="text-muted-foreground">{count} pieces</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-muted-foreground">No reused pieces yet</p>
-          )}
+        <div className="bg-card rounded-lg border p-6">
+          <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary" /> Recent Demand Lists
+          </h3>
+          {demands.slice(0, 5).map(d => (
+            <div key={d.id} className="flex justify-between items-center py-2 border-b last:border-0 text-sm">
+              <span className="text-foreground">{d.profiles?.display_name || 'Unknown'}</span>
+              <span className={`px-2 py-1 rounded text-xs font-medium ${
+                d.status === 'pending' ? 'bg-warning/20 text-warning' :
+                d.status === 'approved' ? 'bg-success/20 text-success' :
+                'bg-destructive/20 text-destructive'
+              }`}>{d.status}</span>
+            </div>
+          ))}
+          {demands.length === 0 && <p className="text-sm text-muted-foreground">No demand lists yet</p>}
         </div>
 
-        <div className="stat-card">
-          <div className="flex items-center gap-2 mb-3">
-            <Layers className="h-5 w-5 text-info" />
-            <h3 className="font-semibold text-foreground">Inventory Capacity</h3>
-          </div>
-          <p className="text-3xl font-bold text-foreground">{stats.inStock}/200</p>
-          <div className="w-full bg-muted rounded-full h-3 mt-3">
-            <div
-              className="red-gradient h-3 rounded-full transition-all"
-              style={{ width: `${Math.min((stats.inStock / 200) * 100, 100)}%` }}
-            />
-          </div>
-          <p className="text-sm text-muted-foreground mt-1">{Math.round((stats.inStock / 200) * 100)}% used</p>
+        <div className="bg-card rounded-lg border p-6">
+          <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">
+            <CheckCircle className="h-5 w-5 text-success" /> Recent Supply Lists
+          </h3>
+          {supplies.slice(0, 5).map(s => (
+            <div key={s.id} className="flex justify-between items-center py-2 border-b last:border-0 text-sm">
+              <span className="text-foreground">{s.profiles?.display_name || 'Unknown'}</span>
+              <span className={`px-2 py-1 rounded text-xs font-medium ${
+                s.status === 'pending' ? 'bg-warning/20 text-warning' :
+                s.status === 'approved' ? 'bg-success/20 text-success' :
+                'bg-destructive/20 text-destructive'
+              }`}>{s.status}</span>
+            </div>
+          ))}
+          {supplies.length === 0 && <p className="text-sm text-muted-foreground">No supply lists yet</p>}
         </div>
       </div>
     </div>
